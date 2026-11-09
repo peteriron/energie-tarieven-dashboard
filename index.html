@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dynamische stroomprijs Limburg</title>
+  <meta name="description" content="Live, historische en verwachte all-in kWh-prijs voor ENGIE Dynamic klanten in Limburg (Fluvius), gebaseerd op EPEX SPOT Day-Ahead België.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <div>
+        <p class="eyebrow">ENGIE Dynamic · Fluvius Limburg · Vlaanderen</p>
+        <h1>Dynamische stroomprijs</h1>
+      </div>
+      <div class="status">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Laden…</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="kpis" aria-label="Kerncijfers">
+      <article class="kpi kpi-now">
+        <h2>Nu <span id="nowSlot" class="muted"></span></h2>
+        <p class="big"><span id="nowPrice">–</span><small> c€/kWh</small></p>
+        <p class="sub" id="nowSub">all-in, incl. 6% btw</p>
+        <div class="meter" aria-hidden="true"><span id="nowMeter"></span></div>
+      </article>
+      <article class="kpi">
+        <h2>Vandaag</h2>
+        <p class="big"><span id="todayAvg">–</span><small> gem.</small></p>
+        <p class="sub" id="todayRange">min – max</p>
+      </article>
+      <article class="kpi">
+        <h2>Morgen</h2>
+        <p class="big"><span id="tomAvg">–</span><small id="tomUnit"> gem.</small></p>
+        <p class="sub" id="tomRange">beschikbaar na ±13u</p>
+      </article>
+      <article class="kpi">
+        <h2>Goedkoopste 2 uur</h2>
+        <p class="big"><span id="bestWin">–</span></p>
+        <p class="sub" id="bestSub">komende uren (gekende prijzen)</p>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Prijsverloop <span class="muted" id="chartUnit">c€/kWh</span></h2>
+        <div class="controls">
+          <div class="seg" role="group" aria-label="Periode" id="rangeSeg">
+            <button data-range="48h" class="on">48 u</button>
+            <button data-range="7d">7 d</button>
+            <button data-range="30d">30 d</button>
+            <button data-range="90d">90 d</button>
+          </div>
+          <div class="seg" role="group" aria-label="Weergave" id="modeSeg">
+            <button data-mode="allin" class="on">All-in</button>
+            <button data-mode="energy">Energie</button>
+            <button data-mode="spot">EPEX €/MWh</button>
+          </div>
+        </div>
+      </div>
+      <div class="legend" id="legend">
+        <span><i class="sw sw-hist"></i>Historiek</span>
+        <span><i class="sw sw-da"></i>Day-ahead (vastgelegd)</span>
+        <span><i class="sw sw-proj"></i>Verwachting (indicatief)</span>
+        <label class="chk"><input type="checkbox" id="showInject"> Injectieprijs</label>
+      </div>
+      <div class="chart-box"><canvas id="chart" aria-label="Grafiek van de kWh-prijs"></canvas></div>
+    </section>
+
+    <div class="grid2">
+      <section class="card">
+        <h2>Uurprijzen <span class="muted">all-in c€/kWh</span></h2>
+        <div class="heat" id="heat"></div>
+        <p class="note">Gemiddelde per uur van de vier kwartierprijzen. Groen = goedkoper dan het daggemiddelde, rood = duurder.</p>
+      </section>
+
+      <section class="card">
+        <h2>Opbouw prijs nu <span class="muted">c€/kWh incl. btw</span></h2>
+        <table class="breakdown" id="breakdown"></table>
+        <h3>Vaste kosten (los van verbruik)</h3>
+        <table class="breakdown" id="fixed"></table>
+        <details class="settings">
+          <summary>Eigen contractformule instellen</summary>
+          <p class="note">De formule hangt af van de maand waarin je je contract afsloot. Vind ze op je ENGIE-tariefkaart (excl. btw).</p>
+          <div class="form">
+            <label>Afname: vast deel <input type="number" step="0.0001" id="fA"></label>
+            <label>Afname: factor × eSpot <input type="number" step="0.0001" id="fB"></label>
+            <label>Injectie: vast deel <input type="number" step="0.0001" id="fIA"></label>
+            <label>Injectie: factor × eSpot <input type="number" step="0.0001" id="fIB"></label>
+            <label class="chk"><input type="checkbox" id="fGreen"> Optie 100% Belgische groene stroom</label>
+          </div>
+          <button id="fReset" class="link">Terug naar tariefkaart oktober 2026</button>
+        </details>
+      </section>
+    </div>
+
+    <section class="card about">
+      <h2>Hoe wordt de prijs berekend?</h2>
+      <p>Het ENGIE Dynamic-tarief volgt per kwartier de <strong>EPEX SPOT Day-Ahead</strong>-notering voor België (eSpot_15). Dat is dezelfde publieke marktprijs die Home Assistant via de Nord Pool- of ENTSO-E-integratie gebruikt. De day-ahead-prijzen voor morgen worden rond 13u gepubliceerd. Verder vooruit toont het dashboard een <em>indicatieve verwachting</em>: het gemiddelde weekprofiel van de laatste 4 weken, bijgesteld naar het prijsniveau van de laatste 7 dagen.</p>
+      <p class="formula" id="formula"></p>
+      <p class="note">Niet-officiële weergave, geen ENGIE-product. Tarieven: ENGIE-tariefkaart Dynamic oktober 2026 (Vlaams Gewest), nettarieven Fluvius Limburg voor een digitale meter. Je factuur kan afwijken (contractmaand, capaciteitstarief, verrekening). Marktdata: <a href="https://www.energy-charts.info" target="_blank" rel="noopener">Energy-Charts</a> (CC BY 4.0). <span id="updated"></span></p>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="tariffs.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
